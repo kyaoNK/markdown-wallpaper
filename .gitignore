@@ -1,0 +1,11 @@
+out
+dist
+node_modules
+.vscode-test/
+*.vsix
+.vscode/
+.DS_Store
+Thumbs.db
+*.tsbuildinfo
+.npm
+.eslintcache
