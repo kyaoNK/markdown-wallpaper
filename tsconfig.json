@@ -16,7 +16,6 @@
 	},
 	"include": [
 		"src",
-		"src/style.css"
 	],
 	"exclude": [
 		"node_modules"

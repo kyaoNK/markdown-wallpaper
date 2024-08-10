@@ -20,11 +20,6 @@ interface TreeNode {
 	children: TreeNode[];
 }
 
-`
-
-
-`;
-
 export class ContentDivider {
 
 	private readonly MAX_WIDTH : number = 1920;
@@ -50,17 +45,36 @@ export class ContentDivider {
 	private optimalDivisions: number = 0;
 
 	constructor(htmlString: string) {
-		// CSSファイルの内容を読み込む
-		const cssPath = path.join(path.dirname(vscode.window.activeTextEditor?.document.uri.fsPath || ''), 'md-wallpaper', 'style.css');
-		this.cssContent = fs.readFileSync(cssPath, 'utf-8');
 		this.htmlString = `<html><head></head><body>${htmlString}</body></html>`;
 		this.currentFontSize = this.MAX_FONT_SIZE;
+		this.cssContent = '';
 	}
 
 	public async initialize(): Promise<void> {
 		if (this.browser) {
 			await this.close();
 		}
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) {
+			vscode.window.showErrorMessage('No active editor found.');
+			return;
+		}
+		const document = editor.document;
+		if (document.languageId !== 'markdown') {
+			vscode.window.showErrorMessage('Active document is not a Markdown file.');
+			return;
+		}
+		const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+		if (!workspaceFolder) {
+			vscode.window.showErrorMessage('No workspace folder found for the current document.');
+			return;
+		}
+
+		const cssPath = vscode.Uri.joinPath(workspaceFolder.uri, 'md-wallpaper', 'style.css');
+		// const cssPath = vscode.Uri.file(path.join(path.dirname(vscode.window.activeTextEditor?.document.uri.fsPath || ''), 'md-wallpaper', 'style.css'));
+		const cssContentBuffer = await vscode.workspace.fs.readFile(cssPath);
+		this.cssContent = Buffer.from(cssContentBuffer).toString('utf-8');
+
 		const launchOptions: puppeteer.PuppeteerLaunchOptions = {
             args: ['--no-sandbox', '--disable-setuid-sandbox'],
             defaultViewport: { 
@@ -77,9 +91,7 @@ export class ContentDivider {
 		}
 
 		this.browser = await puppeteer.launch(launchOptions);
-
 		this.page = await this.browser.newPage();
-		// await this.page.setViewport({ width: this.MAX_WIDTH, height: this.MAX_HEIGHT, deviceScaleFactor: 1 });
 	}
 
 	public async close(): Promise<void> {
@@ -111,7 +123,7 @@ export class ContentDivider {
 			// this.openInBrowser(filePath);
 	
 			this.divideTree();
-			this.logResults();
+			// this.logResults();
 	
 			// await this.testHtml();
 	
@@ -121,33 +133,34 @@ export class ContentDivider {
 		}
 	}
 
-	private async getOptimalHtml(): Promise<string> {
-        if (!this.page) {
-            throw new Error('Page not initialized.');
-        }
-        // 現在のページのHTMLを取得
-        let html = await this.page.content();
-        return pretty(html);
-    }
+	// private async getOptimalHtml(): Promise<string> {
+    //     if (!this.page) {
+    //         throw new Error('Page not initialized.');
+    //     }
+    //     // 現在のページのHTMLを取得
+    //     let html = await this.page.content();
+    //     return pretty(html);
+    // }
 
-	private async saveHtmlFile(html: string): Promise<string> {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            throw new Error('No active editor found.');
-        }
+	// private async saveHtmlFile(html: string): Promise<string> {
+    //     const editor = vscode.window.activeTextEditor;
+    //     if (!editor) {
+    //         throw new Error('No active editor found.');
+    //     }
         
-        const folderPath = path.dirname(editor.document.uri.fsPath);
-        const filePath = path.join(folderPath, 'out', 'optimal_content.html');
+    //     const folderPath = path.dirname(editor.document.uri.fsPath);
+    //     const filePath = vscode.Uri.file(path.join(folderPath, 'out', 'optimal_content.html'));
         
-        fs.writeFileSync(filePath, html);
-        console.log(`Optimal HTML saved to: ${filePath}`);
+    //     // fs.writeFileSync(filePath, html);
+	// 	await vscode.workspace.fs.writeFile(filePath, Buffer.from(html));
+    //     console.log(`Optimal HTML saved to: ${filePath}`);
         
-        return filePath;
-    }
+    //     return filePath.fsPath;
+    // }
 
-    private openInBrowser(filePath: string) {
-        vscode.env.openExternal(vscode.Uri.file(filePath));
-    }
+    // private openInBrowser(filePath: string) {
+    //     vscode.env.openExternal(vscode.Uri.file(filePath));
+    // }
 
 	private async setDomTree(): Promise<void> {
 		if (!this.page) {
@@ -232,7 +245,7 @@ export class ContentDivider {
 	}
 
 	private async getOptimalSettings(): Promise<void> {
-		this.logToFile("getOptimalSettings function is called");
+		// this.logToFile("getOptimalSettings function is called");
 		let bestResult: {fontSize: number, numDivisions: number} | null = null;
 		for (let numDivisions = this.MIN_NUM_DIVISIONS; numDivisions <= this.MAX_NUM_DIVISIONS; numDivisions++) {
 			for (let fontSize = this.MAX_FONT_SIZE; fontSize >= this.MIN_FONT_SIZE; fontSize--) {
@@ -246,7 +259,7 @@ export class ContentDivider {
 						// this.logToFile(`Found optimal settings: fontSize=${fontSize}, divisions=${numDivisions}`);
 						this.optimalFontSize = bestResult.fontSize;
 						this.optimalDivisions = bestResult.numDivisions;
-						this.logToFile(`\n${JSON.stringify(this.domTree, null, 4)}`);
+						// this.logToFile(`\n${JSON.stringify(this.domTree, null, 4)}`);
 						return;
 					}
 				} catch (error) {
@@ -256,11 +269,11 @@ export class ContentDivider {
 		}
 		if (!bestResult) {
 			bestResult = { fontSize: this.MIN_FONT_SIZE, numDivisions: this.MAX_NUM_DIVISIONS };
-			this.logToFile("No optimal settings found, using minimum values");
+			// this.logToFile("No optimal settings found, using minimum values");
 		}
 		this.optimalFontSize = bestResult.fontSize;
 		this.optimalDivisions = bestResult.numDivisions;
-		this.logToFile(`\n${JSON.stringify(this.domTree, null, 4)}`);
+		// this.logToFile(`\n${JSON.stringify(this.domTree, null, 4)}`);
 	}
 
 	private contentFitsInDivisions(divisions: number): boolean {
@@ -346,8 +359,8 @@ export class ContentDivider {
 					// 分割ポイントに達した場合、現在の探索済みの木を結果に追加
 					dividedTrees.push(JSON.parse(JSON.stringify(exploredTree)));
 					// console.log(`=============== ${childNode.tag}で分割しました ===============`); // デバッグ出力
-					this.logToFile(`現在の分割結果\n${JSON.stringify(dividedTrees, null, 4)}`);
-					this.logToFile(`現在の未探索の部分木\n${JSON.stringify(unexploredTree, null, 4)}`);
+					// this.logToFile(`現在の分割結果\n${JSON.stringify(dividedTrees, null, 4)}`);
+					// this.logToFile(`現在の未探索の部分木\n${JSON.stringify(unexploredTree, null, 4)}`);
 					// 探索済みの木をリセット
 					unexploredNode.children.splice(0, i+1);
                     exploredTree = {...this.domTree!, children: []};
@@ -375,10 +388,10 @@ export class ContentDivider {
 		}
 
 		// 最後の部分木を追加（未探索の木に子ノードが残っているか、分割された木が一つもない場合）
-		this.logToFile(`未探索の部分木\n${JSON.stringify(unexploredTree, null, 4)}`);
-		this.logToFile(`最後の探索済みの部分木\n${JSON.stringify(exploredTree, null, 4)}`);
+		// this.logToFile(`未探索の部分木\n${JSON.stringify(unexploredTree, null, 4)}`);
+		// this.logToFile(`最後の探索済みの部分木\n${JSON.stringify(exploredTree, null, 4)}`);
 		this.dividedDomTrees = dividedTrees;
-		this.logToFile(`分割結果\n${JSON.stringify(this.dividedDomTrees, null, 4)}`); // デバッグ出力
+		// this.logToFile(`分割結果\n${JSON.stringify(this.dividedDomTrees, null, 4)}`); // デバッグ出力
         // console.log("終了: divideTree()"); // デバッグ出力
 	}
 
@@ -429,58 +442,58 @@ export class ContentDivider {
 		return html;
 	}
 
-	private logResults(): void {
-		this.logToFile('========== Optimal Settings ==========');
-		this.logToFile(`\t\tFont Size: ${this.optimalFontSize}px`);
-		this.logToFile(`\t\tNum Divisions: ${this.optimalDivisions}`);
-		this.logToFile(`\t\tColumn Width: ${this.MAX_WIDTH / this.optimalDivisions}px`);
-		this.logToFile('======================================');
-		console.log('========== Optimal Settings ==========');
-		console.log(`\tFont Size: ${this.optimalFontSize}px`);
-		console.log(`\tNum Divisions: ${this.optimalDivisions}`);
-		console.log(`\tColumn Width: ${this.MAX_WIDTH / this.optimalDivisions}px`);
-		console.log('======================================');
-		this.logToFile('============== DOM Tree ==============');
-		if (this.domTree === null ) {
-			throw new Error("domTree is null.");
-		}
-		this.logToFile(`\n${this.printTreeStructure(this.domTree)}`);
-		this.logToFile('======================================');
-	}
+	// private logResults(): void {
+		// this.logToFile('========== Optimal Settings ==========');
+		// this.logToFile(`\t\tFont Size: ${this.optimalFontSize}px`);
+		// this.logToFile(`\t\tNum Divisions: ${this.optimalDivisions}`);
+		// this.logToFile(`\t\tColumn Width: ${this.MAX_WIDTH / this.optimalDivisions}px`);
+		// this.logToFile('======================================');
+		// console.log('========== Optimal Settings ==========');
+		// console.log(`\tFont Size: ${this.optimalFontSize}px`);
+		// console.log(`\tNum Divisions: ${this.optimalDivisions}`);
+		// console.log(`\tColumn Width: ${this.MAX_WIDTH / this.optimalDivisions}px`);
+		// console.log('======================================');
+		// this.logToFile('============== DOM Tree ==============');
+		// if (this.domTree === null ) {
+		// 	throw new Error("domTree is null.");
+		// }
+		// this.logToFile(`\n${this.printTreeStructure(this.domTree)}`);
+		// this.logToFile('======================================');
+	// }
 
-	private printTreeStructure(node: TreeNode | null = null, depth: number = 0): void {
-		if (node === null) {
-			return;
-		}
-		const indent = "\t" + "\t".repeat(depth++);
-		this.logToFile(`${indent}<${node.tag}>`);
-		if (node.divideHere) {
-			this.logToFile(`${indent}divideHere: true`);
+	// private printTreeStructure(node: TreeNode | null = null, depth: number = 0): void {
+	// 	if (node === null) {
+	// 		return;
+	// 	}
+	// 	const indent = "\t" + "\t".repeat(depth++);
+		// this.logToFile(`${indent}<${node.tag}>`);
+		// if (node.divideHere) {
+			// this.logToFile(`${indent}divideHere: true`);
 			// console.log(`Divide here set to true for node: <${node.tag}>${node.directTextContent}</${node.tag}> in printTreeStructure.`); 
-		}
-		if (node.directTextContent){
-			this.logToFile(`${indent}${node.directTextContent}`);
-		}
-		for (const child of node.children) {
-			this.printTreeStructure(child, depth);
-		}
-		this.logToFile(`${indent}</${node.tag}>`);
-		return;
-	}
+		// }
+		// if (node.directTextContent){
+			// this.logToFile(`${indent}${node.directTextContent}`);
+		// }
+		// for (const child of node.children) {
+		// 	this.printTreeStructure(child, depth);
+		// }
+		// this.logToFile(`${indent}</${node.tag}>`);
+		// return;
+	// }
 
-	private logToFile(message: string): void {
-		const editor = vscode.window.activeTextEditor;
-		if (!editor) {
-			vscode.window.showErrorMessage('No active editor found.');
-			return;
-		}
-		const logFilePath = path.join(path.dirname(editor.document.uri.fsPath), 'out', 'app.log');
-		try {
-			fs.mkdirSync(path.dirname(logFilePath), { recursive: true });
-			fs.appendFileSync(logFilePath, `${new Date().toISOString()} - ${message}\n`);
-		} catch (error) {
-			console.error('Error writing to log file:', error);
-            vscode.window.showErrorMessage('Failed to write to log file.');
-		}
-	}
+	// private logToFile(message: string): void {
+	// 	const editor = vscode.window.activeTextEditor;
+	// 	if (!editor) {
+	// 		vscode.window.showErrorMessage('No active editor found.');
+	// 		return;
+	// 	}
+	// 	const logFilePath = path.join(path.dirname(editor.document.uri.fsPath), 'out', 'app.log');
+	// 	try {
+	// 		fs.mkdirSync(path.dirname(logFilePath), { recursive: true });
+	// 		fs.appendFileSync(logFilePath, `${new Date().toISOString()} - ${message}\n`);
+	// 	} catch (error) {
+	// 		console.error('Error writing to log file:', error);
+    //         vscode.window.showErrorMessage('Failed to write to log file.');
+	// 	}
+	// }
 }

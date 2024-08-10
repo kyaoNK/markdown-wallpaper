@@ -80,7 +80,16 @@
     "puppeteer": "^22.15.0",
     "ts-node": "^10.9.2"
   },
-  "files": [
-    "src/style.css"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/markdown-wallpaperimage.git"
+  },
+  "permissions": [
+    "files"
+  ],
+  "files.readwrite": [
+    "/workspace",
+    "/workspace/out",
+    "/workspace/md-wallpaper"
   ]
 }
