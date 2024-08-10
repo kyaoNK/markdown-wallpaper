@@ -25,16 +25,13 @@ export function activate(context: vscode.ExtensionContext) {
 		const markdownText = document.getText();
 		const md = new MarkdownIt();
 		const htmlContent = md.render(markdownText);
-		
-		const cssPath = path.join(context.extensionPath, 'src', 'style.css');
-		const cssContent = fs.readFileSync(cssPath, 'utf-8');
 
-		const html = insertCSS(cssContent, htmlContent);
-
-		const divider = new ContentDivider(html);
+		const divider = new ContentDivider(htmlContent);
 		await divider.initialize();
 		const dividedHtml = await divider.run();
 
+		const cssPath = path.join(path.dirname(vscode.window.activeTextEditor?.document.uri.fsPath || ''), 'md-wallpaper', 'style.css');
+		const cssContent = fs.readFileSync(cssPath, 'utf-8');
 		const completeHtml = insertCSS(cssContent, dividedHtml);
 
 		const prettyHtml = pretty(completeHtml);
