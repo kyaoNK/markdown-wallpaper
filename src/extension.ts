@@ -2,31 +2,34 @@ import * as vscode from 'vscode';
 import MarkdownIt from 'markdown-it';
 import * as puppeteer from 'puppeteer';
 import pretty from 'pretty';
+import * as path from 'path';
 
 import { ContentDivider } from './dividedcontent';
+import { resolve } from 'path';
 
 export function activate(context: vscode.ExtensionContext) {
 
 	console.log('Congratulations, your extension "markdown-wallpaperimage" is now active!');
 
 	let disposable = vscode.commands.registerCommand('extension.generateImage', async() => {
+		// Check editor and document
 		const editor = vscode.window.activeTextEditor;
 		if (!editor) {
 			vscode.window.showErrorMessage('No active editor found.');
 			return;
 		}
-		const document = editor.document;
-		if (document.languageId !== 'markdown') {
-			vscode.window.showErrorMessage('Active document is not a Markdown file.');
+		const editorDocument = editor.document;
+		if (editorDocument.languageId !== 'markdown') {
+			vscode.window.showErrorMessage('Active editor document is not a Markdown file.');
 			return;
 		}
-		const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+		const workspaceFolder = vscode.workspace.getWorkspaceFolder(editorDocument.uri);
 		if (!workspaceFolder) {
-			vscode.window.showErrorMessage('No workspace folder found for the current document.');
+			vscode.window.showErrorMessage('No workspace folder found for the current editor document.');
 			return;
 		}
 
-		const markdownText = document.getText();
+		const markdownText = editorDocument.getText();
 		const md = new MarkdownIt();
 		const htmlContent = md.render(markdownText);
 
@@ -49,33 +52,32 @@ export function activate(context: vscode.ExtensionContext) {
 
 		const divider = new ContentDivider(htmlContent, cssContent);
 		await divider.initialize();
-		const dividedHtml = await divider.run();
+		let dividedHtml = await divider.run();
 		await divider.close();
 
-		let prettyHtml = pretty(dividedHtml);
-
 		const backgroundImagePath = vscode.Uri.joinPath(wallpaperCssFolder, 'background-image.png');
-		vscode.workspace.fs.stat(backgroundImagePath).then( (stat) => {
+		const backgroundImageURL = `file://${backgroundImagePath.fsPath.replace(/\\/g, '/')}`;
+
+		await vscode.workspace.fs.stat(backgroundImagePath).then( (stat) => {
 			if (stat.type === vscode.FileType.File) {
-				const bodyRegex = /body\s*{[^}]*}/;
-				const bodyMatch = prettyHtml.match(bodyRegex);
-				if (bodyMatch) {
-					const newBody = bodyMatch[0].replace(
-						'}',
-						`\tbackground-image: url('${backgroundImagePath.fsPath}');\n}`
-					);
-					const newPrettyHtml = prettyHtml.replace(bodyRegex, newBody);
-					prettyHtml = newPrettyHtml;
-					vscode.window.showInformationMessage('Successfully added background image.');
+				const quotedPath = backgroundImageURL.includes(' ') ? `"${backgroundImageURL}"` : backgroundImageURL;
+				const imgHtml = `<div class="background"><img src='${quotedPath}' alt="Background Image"></div>`;
+				const bodyRegex = /(<body[^>]*>)/i;
+				if (bodyRegex.test(dividedHtml)) {
+					dividedHtml = dividedHtml.replace(bodyRegex, `$1\n\t${imgHtml}`);
+					vscode.window.showInformationMessage('Background image tag added successfully.');
 				} else {
-					vscode.window.showWarningMessage('Not found body selector in css.');
+					vscode.window.showWarningMessage('Could not find <body> tag to insert background image.');
 				}
+				vscode.window.showInformationMessage('Add Background image tag.');
 			} else {
 				vscode.window.showErrorMessage('Background image file is not a file.');
 			}
 		}, (error) => {
 			vscode.window.showInformationMessage('If you want to include a background image, please put background-image.png in the wallpaper-css folder.');
 		});
+
+		let prettyHtml = pretty(dividedHtml);
 
 		const outDir = vscode.Uri.joinPath(workspaceFolder.uri, 'out');
 		try {
@@ -88,17 +90,48 @@ export function activate(context: vscode.ExtensionContext) {
 		await vscode.workspace.fs.writeFile(htmlPath, Buffer.from(prettyHtml));
 
 		const wallpaperImagePath = vscode.Uri.joinPath(outDir, 'wallpaper.png');
-		const browser: puppeteer.Browser = await puppeteer.launch();
+		const launchOptions: puppeteer.PuppeteerLaunchOptions = {
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--allow-file-access-from-files', '--enable-local-file-accesses'],
+            defaultViewport: { 
+                width: 1920, 
+                height: 1080,
+                deviceScaleFactor: 1 
+            }
+        };
+		if (puppeteer.default && typeof puppeteer.default.launch === 'function') {
+			(launchOptions as any).headless = 'new';
+		} else {
+			launchOptions.headless = false;
+		}
+		const browser = await puppeteer.launch(launchOptions);
 		const page: puppeteer.Page = await browser.newPage();
-		await page.setViewport({ width: 1920, height: 1080 });
-		await page.setContent(prettyHtml);
-		const imageBuffer = await page.screenshot({ fullPage: true });
+		await page.setBypassCSP(true);
+		await page.setRequestInterception(true);
+		page.on('request', request => {
+			if (request.url().startsWith('file://')) {
+				request.continue();
+			} else {
+				request.abort();
+			}
+		});
+		await page.goto(`file://${path.resolve(workspaceFolder.uri.fsPath)}`);
+		await page.setContent(prettyHtml, {waitUntil: 'networkidle0'});
+		await page.evaluate(() => {
+			return new Promise(resolve => {
+				requestAnimationFrame(() => {
+					requestAnimationFrame(resolve);
+				});
+			});
+		});
+		const imageBuffer = await page.screenshot({ 
+			fullPage: true,
+			type: 'png',
+			omitBackground: false
+		});
 		await vscode.workspace.fs.writeFile(wallpaperImagePath, imageBuffer);
-		await browser.close();
-
 		vscode.window.showInformationMessage('HTML and Image generated and saved!');
+		await browser.close();
 	});
-
 	context.subscriptions.push(disposable);
 }
 

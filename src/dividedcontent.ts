@@ -38,7 +38,7 @@ export class ContentDivider {
 	}
 
 	public async initialize(): Promise<void> {
-		if (this.browser) await this.close();
+		if (this.browser) { await this.close(); }
 		const launchOptions: puppeteer.PuppeteerLaunchOptions = {
             args: ['--no-sandbox', '--disable-setuid-sandbox'],
             defaultViewport: { 
@@ -65,9 +65,11 @@ export class ContentDivider {
 	}
 
 	public async run(): Promise<string> {
-		if (!this.browser || !this.page) await this.initialize();
+		if (!this.browser || !this.page) { await this.initialize(); }
 		try {
 			await this.getOptimalSettings();
+			console.log(`Optimal FontSize: ${this.optimalFontSize}`);
+			console.log(`Optimal NumColumns: ${this.optimalNumColumns}`);
 			return this.createHtml();
 		} finally {
 			await this.close();
@@ -75,7 +77,7 @@ export class ContentDivider {
 	}
 
 	private async setDomTree(fontSize: number, numColumns: number): Promise<void> {
-		if (!this.page) throw new Error('Page not initialized.');
+		if (!this.page) { throw new Error('Page not initialized.'); }
 	
 		const columnWidth = this.MAX_WIDTH / numColumns;
 		const bodyContentRegex = /<body[^>]*>([\s\S]*?)<\/body>/i;
@@ -159,7 +161,7 @@ export class ContentDivider {
 				}
 			}
 		}
-		if (!bestResult) bestResult = { fontSize: this.MIN_FONTSIZE, numColumns: this.MAX_NUM_COLUMNS };
+		if (!bestResult) { bestResult = { fontSize: this.MIN_FONTSIZE, numColumns: this.MAX_NUM_COLUMNS }; }
 		this.optimalFontSize = bestResult.fontSize;
 		this.optimalNumColumns = bestResult.numColumns;
 		return;
@@ -172,31 +174,32 @@ export class ContentDivider {
 			if (usedColumns < numColumns) {
 				usedColumns++;
 				lastDivideOffset = node.topOffset;
-				console.log(`================ ${node.tag} ================`);
+				console.log(`========================== New Division at ${lastDivideOffset} ==========================`);
 				return true;
 			}
 			return false;
 		};
-		
 		const dfs = (node: TreeNode): boolean => {
-			if (node.isHidden) {
-				return true;
-			}
-			const relativeBottomOffset = node.bottomOffset - lastDivideOffset;			
+			if (node.isHidden) { return true; }
+			const relativeBottomOffset = node.bottomOffset - lastDivideOffset;
 			if (node.children.length === 0) {
-				console.log(`Leaf ${node.tag} | bottomOffset: ${node.bottomOffset} | relative: ${relativeBottomOffset} | ${node.directTextContent}`);
-
+				// console.log(`Leaf   ${node.tag} | relativeBottom:${relativeBottomOffset} | ${node.directTextContent.substring(0,10)}`);
 				if (relativeBottomOffset > this.MAX_HEIGHT) {
 					if (!startNewColumn(node)) {
 						return false;
 					}
 				}
 			} else {
+				// const childrenHeight = node.children.reduce((sum, child) => sum + (child.bottomOffset - child.topOffset), 0);
+				// const nodeContentBottomOffset = node.bottomOffset - childrenHeight;
+				// console.log(`Parent ${node.tag} | Content Bottom:${nodeContentBottomOffset} | ${node.directTextContent.substring(0,10)}`);
+				// if (nodeContentBottomOffset > this.MAX_HEIGHT) {
 				for (const child of node.children) {
 					if (!dfs(child)) {
 						return false;
 					}
 				}
+				// }
 				const lastChild = node.children[node.children.length - 1];
 				const lastChildRelativeBottom = lastChild.bottomOffset - lastDivideOffset;
 				if (lastChildRelativeBottom > this.MAX_HEIGHT) {
@@ -207,7 +210,9 @@ export class ContentDivider {
 			}
             return true;
 		};
-		if (this.domTree === null) throw new Error('domTree is null in contentFitsInDvisions');
+		if (this.domTree === null) {
+			throw new Error('domTree is null in contentFitsInDvisions');
+		}
 		const result = dfs(this.domTree);
 		return result && usedColumns <= numColumns;
 	}
