@@ -3,7 +3,7 @@
   "displayName": "Markdown WallPaperImage",
   "description": "Generates a wallpaper image from markdown in vscode.",
   "version": "2.0.1",
-  "publisher": "638e339b-f9eb-6f0e-847b-6f50b7a1722f",
+  "publisher": "kyaoNK",
   "engines": {
     "vscode": "^1.91.0"
   },
