@@ -17,22 +17,37 @@
   "contributes": {
     "commands": [
       {
-        "command": "extension.generateImage",
-        "title": "Generate Image from Markdown"
+        "command": "extension.generatWallpaperWithLastUsedWallpaperSize",
+        "title": "Generate wallpaper image and html with last used wallpaper size from markdown"
+      },
+      {
+        "command": "extension.generatWallpaperWithSelectedWallpaperSize",
+        "title": "Generate wallpaper image and html with selected wallpaper size from markdown"
       }
     ],
     "keybindings": [
       {
-        "command": "extension.generateImage",
+        "command": "extension.generatWallpaperWithLastUsedWallpaperSize",
         "key": "ctrl+alt+w",
         "mac": "cmd+alt+w",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "extension.generatWallpaperWithSelectedWallpaperSize",
+        "key": "ctrl+shift+alt+w",
+        "mac": "cmd+shift+alt+w",
         "when": "editorTextFocus"
       }
     ],
     "menus": {
       "editor/title": [
         {
-          "command": "extension.generateImage",
+          "command": "extension.generatWallpaperWithLastUsedWallpaperSize",
+          "group": "navigation",
+          "when": "view == markdownView"
+        },
+        {
+          "command": "extension.generatWallpaperWithSelectedWallpaperSize",
           "group": "navigation",
           "when": "view == markdownView"
         }
