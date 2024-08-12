@@ -81,7 +81,7 @@ export class ContentDivider {
 	
 		const columnWidth = this.MAX_WIDTH / numColumns;
 		const bodyContentRegex = /<body[^>]*>([\s\S]*?)<\/body>/i;
-		const newBodyContent = `<body>\n<div class="container" style="max-width: ${columnWidth}px; font-size: ${fontSize}px;">\n$1\n</div>\n</body>`;
+		const newBodyContent = `<body>\n<div class="container"><div class="content" style="max-width: ${columnWidth}px; font-size: ${fontSize}px;">\n$1\n</div>\n</div>\n</body>`;
 		let modifiedHtml = this.htmlContent.replace(bodyContentRegex, newBodyContent);
 
 		modifiedHtml = modifiedHtml.replace('</head>', `<style>${this.cssContent}</style></head>`);
@@ -138,7 +138,7 @@ export class ContentDivider {
 				};
 				return node;
 			}
-			return createNode(document.getElementsByClassName("container")[0]);
+			return createNode(document.getElementsByClassName("content")[0]);
 		});
 
 	}
@@ -149,6 +149,7 @@ export class ContentDivider {
 			for (let fontSize = this.MAX_FONTSIZE; fontSize >= this.MIN_FONTSIZE; fontSize--) {
 				try {
 					await this.setDomTree(fontSize, numColumns);
+					console.log(`numColumns: ${numColumns} | fontSize: ${fontSize}`);
 					const fits = this.contentFitsInColumns(numColumns);
 					if (fits) {
 						bestResult = { fontSize, numColumns };
@@ -168,59 +169,31 @@ export class ContentDivider {
 	}
 
 	private contentFitsInColumns(numColumns: number): boolean {
-		let usedColumns = 1;
-		let lastDivideOffset = 0;
-		const startNewColumn = (node: TreeNode): boolean => {
-			if (usedColumns < numColumns) {
-				usedColumns++;
-				lastDivideOffset = node.topOffset;
-				console.log(`========================== New Division at ${lastDivideOffset} ==========================`);
-				return true;
-			}
-			return false;
-		};
-		const dfs = (node: TreeNode): boolean => {
-			if (node.isHidden) { return true; }
-			const relativeBottomOffset = node.bottomOffset - lastDivideOffset;
-			if (node.children.length === 0) {
-				// console.log(`Leaf   ${node.tag} | relativeBottom:${relativeBottomOffset} | ${node.directTextContent.substring(0,10)}`);
-				if (relativeBottomOffset > this.MAX_HEIGHT) {
-					if (!startNewColumn(node)) {
-						return false;
-					}
-				}
-			} else {
-				// const childrenHeight = node.children.reduce((sum, child) => sum + (child.bottomOffset - child.topOffset), 0);
-				// const nodeContentBottomOffset = node.bottomOffset - childrenHeight;
-				// console.log(`Parent ${node.tag} | Content Bottom:${nodeContentBottomOffset} | ${node.directTextContent.substring(0,10)}`);
-				// if (nodeContentBottomOffset > this.MAX_HEIGHT) {
-				for (const child of node.children) {
-					if (!dfs(child)) {
-						return false;
-					}
-				}
-				// }
-				const lastChild = node.children[node.children.length - 1];
-				const lastChildRelativeBottom = lastChild.bottomOffset - lastDivideOffset;
-				if (lastChildRelativeBottom > this.MAX_HEIGHT) {
-					if (!startNewColumn(node)) {
-						return false;
-					}
-				}
-			}
-            return true;
-		};
 		if (this.domTree === null) {
-			throw new Error('domTree is null in contentFitsInDvisions');
+			throw new Error('domTree is null in contentFitsInColumns');
 		}
-		const result = dfs(this.domTree);
-		return result && usedColumns <= numColumns;
+
+		function getLastLeafNode(node: TreeNode): TreeNode {
+			if (!node) { throw new Error('Invalid node in getLastLeafNode'); }
+			if (node.children.length === 0) { return node; }
+			return getLastLeafNode(node.children[node.children.length - 1]);
+		}
+
+		const lastLeaf = getLastLeafNode(this.domTree);
+		if (lastLeaf === null) { throw new Error('The last leaf node could not be found.'); }
+		const lastLeafBottom = lastLeaf.bottomOffset;
+		console.log(`MAX_HEIGHT:${numColumns * this.MAX_HEIGHT} | Last Leaf ${lastLeaf.tag} | bottom:${lastLeaf.bottomOffset} | ${lastLeaf.directTextContent}`);
+		if (lastLeafBottom < numColumns * (this.MAX_HEIGHT - 20)) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	private createHtml(): string {
 		const bodyRegex = /(<body[^>]*>)([\s\S]*?)(<\/body>)/i;
 		let modifiedHtml = this.htmlContent.replace(bodyRegex, (match, openingTag, content, closingTag) => {
-			return `${openingTag}\n<div class="container" style="font-size: ${this.optimalFontSize}px; column-count: ${this.optimalNumColumns};">\n${content}</div>${closingTag}`;
+			return `${openingTag}\n<div class="container"><div class="content" style="font-size: ${this.optimalFontSize}px; column-count: ${this.optimalNumColumns};">\n${content}</div>\n</div>${closingTag}`;
 		});
 		modifiedHtml = modifiedHtml.replace('</head>', `<style>${this.cssContent}</style></head>`);
 		return modifiedHtml;
