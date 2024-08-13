@@ -55,64 +55,64 @@ For Windows users who want their wallpaper to update automatically when changes 
 
 1. Create a PowerShell script (e.g., `DesktopBackgroundUpdater.ps1`) with the following content:
     ```powershell
-        # Specify the folder path
-        $folderPath = "C:\Users\YourUsername\Documents\Wallpapers\out\"
-        $fileName = "wallpaper.png"  # File pattern to watch
+    # Specify the folder path
+    $folderPath = "C:\Users\YourUsername\Documents\Wallpapers\out\"
+    $fileName = "wallpaper.png"  # File pattern to watch
 
-        # Function to set desktop background
-        function Set-Wallpaper($imagePath) {
-            Add-Type -TypeDefinition @"
-            using System;
-            using System.Runtime.InteropServices;
-            public class Wallpaper {
-                [DllImport("user32.dll", CharSet = CharSet.Auto)]
-                public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
-            }
-        "@
-            $SPI_SETDESKWALLPAPER = 0x0014
-            $SPIF_UPDATEINIFILE = 0x01
-            $SPIF_SENDCHANGE = 0x02
-            [Wallpaper]::SystemParametersInfo($SPI_SETDESKWALLPAPER, 0, $imagePath, $SPIF_UPDATEINIFILE -bor $SPIF_SENDCHANGE)
+    # Function to set desktop background
+    function Set-Wallpaper($imagePath) {
+        Add-Type -TypeDefinition @"
+        using System;
+        using System.Runtime.InteropServices;
+        public class Wallpaper {
+            [DllImport("user32.dll", CharSet = CharSet.Auto)]
+            public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
         }
+    "@
+        $SPI_SETDESKWALLPAPER = 0x0014
+        $SPIF_UPDATEINIFILE = 0x01
+        $SPIF_SENDCHANGE = 0x02
+        [Wallpaper]::SystemParametersInfo($SPI_SETDESKWALLPAPER, 0, $imagePath, $SPIF_UPDATEINIFILE -bor $SPIF_SENDCHANGE)
+    }
 
-        # Set up FileSystemWatcher
-        $watcher = New-Object System.IO.FileSystemWatcher
-        $watcher.Path = $folderPath
-        $watcher.Filter = $fileName
-        $watcher.IncludeSubdirectories = $false
-        $watcher.EnableRaisingEvents = $true
+    # Set up FileSystemWatcher
+    $watcher = New-Object System.IO.FileSystemWatcher
+    $watcher.Path = $folderPath
+    $watcher.Filter = $fileName
+    $watcher.IncludeSubdirectories = $false
+    $watcher.EnableRaisingEvents = $true
 
-        # Define event handler
-        $action = {
-            $path = $Event.SourceEventArgs.FullPath
-            $changeType = $Event.SourceEventArgs.ChangeType
-            $timeStamp = (Get-Date).ToString("yyyy/MM/dd HH:mm:ss")
-            
-            Write-Host "[$timeStamp] File ${changeType}: $path"
-            
-            if ($changeType -eq 'Changed' -or $changeType -eq 'Created') {
-                Set-Wallpaper $path
-                Write-Host "Desktop background updated to: $path"
-            }
+    # Define event handler
+    $action = {
+        $path = $Event.SourceEventArgs.FullPath
+        $changeType = $Event.SourceEventArgs.ChangeType
+        $timeStamp = (Get-Date).ToString("yyyy/MM/dd HH:mm:ss")
+        
+        Write-Host "[$timeStamp] File ${changeType}: $path"
+        
+        if ($changeType -eq 'Changed' -or $changeType -eq 'Created') {
+            Set-Wallpaper $path
+            Write-Host "Desktop background updated to: $path"
         }
+    }
 
-        # Register events
-        Register-ObjectEvent $watcher "Created" -Action $action
-        Register-ObjectEvent $watcher "Changed" -Action $action
+    # Register events
+    Register-ObjectEvent $watcher "Created" -Action $action
+    Register-ObjectEvent $watcher "Changed" -Action $action
 
-        Write-Host "Watching for PNG file changes in $folderPath"
-        Write-Host "Press Ctrl+C to exit"
+    Write-Host "Watching for PNG file changes in $folderPath"
+    Write-Host "Press Ctrl+C to exit"
 
-        # Keep the script running
-        try {
-            while ($true) {
-                Start-Sleep -Seconds 1
-            }
-        } finally {
-            # Unregister event handlers when the script exits
-            Unregister-Event -SourceIdentifier $watcher.Created
-            Unregister-Event -SourceIdentifier $watcher.Changed
+    # Keep the script running
+    try {
+        while ($true) {
+            Start-Sleep -Seconds 1
         }
+    } finally {
+        # Unregister event handlers when the script exits
+        Unregister-Event -SourceIdentifier $watcher.Created
+        Unregister-Event -SourceIdentifier $watcher.Changed
+    }
     ```
 
 2. Set up a Windows Task Scheduler task to run this script:
