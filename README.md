@@ -54,7 +54,7 @@ By leveraging these features, you can create highly personalized wallpapers that
 For Windows users who want their wallpaper to update automatically when changes are made, follow these steps:
 
 1. Create a PowerShell script (e.g., `DesktopBackgroundUpdater.ps1`) with the following content:
-    ```
+    ```powershell
         # Specify the folder path
         $folderPath = "C:\Users\YourUsername\Documents\Wallpapers\out\"
         $fileName = "wallpaper.png"  # File pattern to watch
