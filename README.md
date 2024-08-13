@@ -49,6 +49,84 @@ This extension offers powerful customization options for users who understand HT
 
 By leveraging these features, you can create highly personalized wallpapers that match your style and preferences.
 
+## Automatic Wallpaper Updating (Windows)
+
+For Windows users who want their wallpaper to update automatically when changes are made, follow these steps:
+
+1. Create a PowerShell script (e.g., `DesktopBackgroundUpdater.ps1`) with the following content:
+    ```
+        # Specify the folder path
+        $folderPath = "C:\Users\YourUsername\Documents\Wallpapers\out\"
+        $fileName = "wallpaper.png"  # File pattern to watch
+
+        # Function to set desktop background
+        function Set-Wallpaper($imagePath) {
+            Add-Type -TypeDefinition @"
+            using System;
+            using System.Runtime.InteropServices;
+            public class Wallpaper {
+                [DllImport("user32.dll", CharSet = CharSet.Auto)]
+                public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
+            }
+        "@
+            $SPI_SETDESKWALLPAPER = 0x0014
+            $SPIF_UPDATEINIFILE = 0x01
+            $SPIF_SENDCHANGE = 0x02
+            [Wallpaper]::SystemParametersInfo($SPI_SETDESKWALLPAPER, 0, $imagePath, $SPIF_UPDATEINIFILE -bor $SPIF_SENDCHANGE)
+        }
+
+        # Set up FileSystemWatcher
+        $watcher = New-Object System.IO.FileSystemWatcher
+        $watcher.Path = $folderPath
+        $watcher.Filter = $fileName
+        $watcher.IncludeSubdirectories = $false
+        $watcher.EnableRaisingEvents = $true
+
+        # Define event handler
+        $action = {
+            $path = $Event.SourceEventArgs.FullPath
+            $changeType = $Event.SourceEventArgs.ChangeType
+            $timeStamp = (Get-Date).ToString("yyyy/MM/dd HH:mm:ss")
+            
+            Write-Host "[$timeStamp] File ${changeType}: $path"
+            
+            if ($changeType -eq 'Changed' -or $changeType -eq 'Created') {
+                Set-Wallpaper $path
+                Write-Host "Desktop background updated to: $path"
+            }
+        }
+
+        # Register events
+        Register-ObjectEvent $watcher "Created" -Action $action
+        Register-ObjectEvent $watcher "Changed" -Action $action
+
+        Write-Host "Watching for PNG file changes in $folderPath"
+        Write-Host "Press Ctrl+C to exit"
+
+        # Keep the script running
+        try {
+            while ($true) {
+                Start-Sleep -Seconds 1
+            }
+        } finally {
+            # Unregister event handlers when the script exits
+            Unregister-Event -SourceIdentifier $watcher.Created
+            Unregister-Event -SourceIdentifier $watcher.Changed
+        }
+    ```
+
+2. Set up a Windows Task Scheduler task to run this script:
+    - Open Task Scheduler
+    - Select "Create Task"
+    - In the "General" tab, enter a name and check "Run with highest privileges"
+    - In the "Triggers" tab, click "New" and select "At log on"
+    - In the "Actions" tab, click "New" and set:
+        - Program/script: `powershell.exe`
+        - Add arguments: `-ExecutionPolicy Bypass -File "C:\Path\To\Your\DesktopBackgroundUpdater.ps1"`
+    - Click "OK" to save the task
+
+This setup will automatically update your desktop wallpaper whenever the extension generates a new wallpaper image.
+
 ## Commands
 
 - `extension.generateWallpaperWithSelectedWallpaperSize`: Generate a wallpaper by selecting a size
@@ -72,6 +150,7 @@ For example, you might set:
 
 - Visual Studio Code v1.91.0 or higher
 - Node.js and npm installed on your system
+- PowerShell (for automatic updating on Windows)
 
 ## Extension Settings
 
@@ -95,6 +174,7 @@ Initial release of Markdown Wallpaper Image Generator
 - Implemented custom CSS styling for wallpaper generation
 - Introduced option to use previously selected wallpaper size
 - Added customization options through `wallpaper-css` folder
+- Provided instructions for automatic wallpaper updating on Windows
 
 ## Future Plans
 
@@ -103,6 +183,7 @@ Initial release of Markdown Wallpaper Image Generator
 - Improve performance for large markdown files
 - Add customization options for font styles and colors
 - Provide templates for common wallpaper layouts
+- Develop automatic updating solutions for macOS and Linux
 
 ## License
 
