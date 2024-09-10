@@ -2,7 +2,7 @@
   "name": "markdown-wallpaperimage",
   "displayName": "Markdown WallPaperImage",
   "description": "Generates a wallpaper image from markdown in vscode.",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "publisher": "kyaoNK",
   "engines": {
     "vscode": "^1.91.0"
@@ -52,6 +52,61 @@
           "when": "view == markdownView"
         }
       ]
+    },
+    "configuration": {
+      "title": "markdown-wallpaperimage",
+      "properties": {
+        "markdown-wallpaperimage.defaultWallpaperSizeName": {
+          "type": "string",
+          "default": "FHD",
+          "description": "Default wallpaper size name (e.g., FHD, 4K)"
+        },
+        "markdown-wallpaperimage.outputDirectory": {
+          "type": "string",
+          "default": "wallpapers",
+          "description": "Directory where generated wallpaper images will be saved"
+        },
+        "markdown-wallpaperimage.outputFileName": {
+          "type": "string",
+          "default": "wallpaper",
+          "description": "Base name for the output wallpaper file"
+        },
+        "markdown-wallpaperimage.inputDirectory": {
+          "type": "string",
+          "default": "wallpaper-css",
+          "description": "Directory containing input files for wallpaper generation"
+        },
+        "markdown-wallpaperimage.readStyleCss": {
+          "type": "string",
+          "default": "style.css",
+          "description": "Name of the CSS file to be used for styling the wallpaper"
+        },
+        "markdown-wallpaperimage.readBakgroundImage": {
+          "type": "string",
+          "default": "background-image.png",
+          "description": "Name of the background image file to be used in the wallpaper"
+        },
+        "markdown-wallpaperimage.minNumColumns": {
+          "type": "number",
+          "default": 1,
+          "description": "Minimum number of columns for text layout in the wallpaper"
+        },
+        "markdown-wallpaperimage.maxNumColumns": {
+          "type": "number",
+          "default": 6,
+          "description": "Maximum number of columns for text layout in the wallpaper"
+        },
+        "markdown-wallpaperimage.minFontSize": {
+          "type": "number",
+          "default": 14,
+          "description": "Minimum font size (in pixels) for text in the wallpaper"
+        },
+        "markdown-wallpaperimage.maxFontSize": {
+          "type": "number",
+          "default": 24,
+          "description": "Maximum font size (in pixels) for text in the wallpaper"
+        }
+      }
     }
   },
   "scripts": {

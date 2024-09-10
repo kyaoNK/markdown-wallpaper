@@ -102,7 +102,7 @@ export class PuppeteerController {
         if (!this.page) { throw new Error('Page not initialized.'); }
         const imageBuffer = await this.page.screenshot({
             fullPage: true,
-            type: 'png',
+            type: "png",
             omitBackground: false
         });
         await vscode.workspace.fs.writeFile(path, imageBuffer);

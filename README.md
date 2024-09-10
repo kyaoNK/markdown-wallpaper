@@ -56,8 +56,8 @@ For Windows users who want their wallpaper to update automatically when changes 
 1. Create a PowerShell script (e.g., `DesktopBackgroundUpdater.ps1`) with the following content:
     ```powershell
     # Specify the folder path
-    $folderPath = "C:\Users\YourUsername\Documents\Wallpapers\out\"
-    $fileName = "wallpaper.png"  # File pattern to watch
+    $folderPath = "C:\Users\YourUsername\Documents\Wallpapers\wallpaper\"
+    $fileName = "background-image.png"  # File pattern to watch
 
     # Function to set desktop background
     function Set-Wallpaper($imagePath) {
@@ -129,22 +129,17 @@ This setup will automatically update your desktop wallpaper whenever the extensi
 
 ## Commands
 
-- `extension.generateWallpaperWithSelectedWallpaperSize`: Generate a wallpaper by selecting a size
-- `extension.generateWallpaperWithLastUsedWallpaperSize`: Generate a wallpaper using the last selected size
+- `extension.generatWallpaperWithLastUsedWallpaperSize`: Generate wallpaper image and html with last used wallpaper size from markdown
+- `extension.generatWallpaperWithSelectedWallpaperSize`: Generate wallpaper image and html with selected wallpaper size from markdown
 
 ## Keyboard Shortcuts
 
-This extension does not define any default keyboard shortcuts. However, you can add custom keyboard shortcuts for the commands in VS Code:
+The extension defines the following default keyboard shortcuts:
 
-1. Open the Keyboard Shortcuts editor (File > Preferences > Keyboard Shortcuts)
-2. Search for the command you want to add a shortcut to (e.g., "Generate Wallpaper with Selected Size")
-3. Click on the plus icon next to the command
-4. Press the desired key combination for the shortcut
+- `Ctrl+Alt+W` (Windows/Linux) or `Cmd+Alt+W` (Mac): Generate wallpaper with last used wallpaper size
+- `Ctrl+Shift+Alt+W` (Windows/Linux) or `Cmd+Shift+Alt+W` (Mac): Generate wallpaper with selected wallpaper size
 
-For example, you might set:
-
-- `Ctrl+Alt+W` for "Generate Wallpaper with Selected Size"
-- `Ctrl+Shift+Alt+W` for "Generate Wallpaper with Last Used Size"
+You can customize these shortcuts in VS Code's Keyboard Shortcuts editor.
 
 ## Requirements
 
@@ -154,11 +149,22 @@ For example, you might set:
 
 ## Extension Settings
 
-This extension does not contribute any settings to VS Code.
+This extension contributes the following settings:
+
+- `markdown-wallpaperimage.defaultWallpaperSizeName`: Default wallpaper size name (e.g., FHD, 4K)
+- `markdown-wallpaperimage.outputDirectory`: Directory where generated wallpaper images will be saved
+- `markdown-wallpaperimage.outputFileName`: Base name for the output wallpaper file
+- `markdown-wallpaperimage.inputDirectory`: Directory containing input files for wallpaper generation
+- `markdown-wallpaperimage.readStyleCss`: Name of the CSS file to be used for styling the wallpaper
+- `markdown-wallpaperimage.readBakgroundImage`: Name of the background image file to be used in the wallpaper
+- `markdown-wallpaperimage.minNumColumns`: Minimum number of columns for text layout in the wallpaper
+- `markdown-wallpaperimage.maxNumColumns`: Maximum number of columns for text layout in the wallpaper
+- `markdown-wallpaperimage.minFontSize`: Minimum font size (in pixels) for text in the wallpaper
+- `markdown-wallpaperimage.maxFontSize`: Maximum font size (in pixels) for text in the wallpaper
 
 ## Known Issues
 
-No known issues at this time. If you encounter any problems, please [open an issue](https://github.com/yourusername/markdown-wallpaperimage/issues) on our GitHub repository.
+No known issues at this time. If you encounter any problems, please [open an issue](https://github.com/kyaoNK/markdown-wallpaperimage/issues) on our GitHub repository.
 
 ## Contributing
 
@@ -166,24 +172,11 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Release Notes
 
-### 2.0.1
+### 2.1.0
 
-Initial release of Markdown Wallpaper Image Generator
-
-- Added support for multiple wallpaper sizes
-- Implemented custom CSS styling for wallpaper generation
-- Introduced option to use previously selected wallpaper size
-- Added customization options through `wallpaper-css` folder
-- Provided instructions for automatic wallpaper updating on Windows
-
-## Future Plans
-
-- Add support for more wallpaper sizes
-- Implement theme-based wallpaper generation
-- Improve performance for large markdown files
-- Add customization options for font styles and colors
-- Provide templates for common wallpaper layouts
-- Develop automatic updating solutions for macOS and Linux
+- Updated to version 2.1.0
+- Added new configuration options for customizing wallpaper generation
+- Improved documentation and usage instructions
 
 ## License
 

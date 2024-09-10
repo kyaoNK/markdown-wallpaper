@@ -4,6 +4,6 @@ All notable changes to the "markdown-wallpaperimage" extension will be documente
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [Unreleased]
-
-- Initial release
+## [3.0.0]
+### Added 
+- Configuration

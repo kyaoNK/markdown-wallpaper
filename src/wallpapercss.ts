@@ -48,6 +48,7 @@ export function updateStyleWallpaperSize(cssContent: string, wallpaperSize: Wall
         return 0;
     }
 
+    /* --- hard code --- */
     // サイズを更新する要素とプロパティの配列
     const elementsToUpdate = [
         { selector: 'html', properties: ['height', 'max-width'] },
@@ -67,29 +68,32 @@ export function updateStyleWallpaperSize(cssContent: string, wallpaperSize: Wall
     const numericValue =  paddingValue ? extractNumericValue(paddingValue) : 0 ;
     setProperty('.content', 'width', `${wallpaperSize.width - (numericValue * 2)}px`);
     setProperty('.content', 'height', `${wallpaperSize.height - (numericValue * 2)}px`);
+    /* --- hard code --- */
     return cssContent;
 }
 
-export function getWallpaperCssFolderUri(workspaceFolder: vscode.WorkspaceFolder): vscode.Uri {
-    return vscode.Uri.joinPath(workspaceFolder.uri, 'wallpaper-css');
+export function getWallpaperCssFolderUri(workspaceFolder: vscode.WorkspaceFolder, inputDir: string): vscode.Uri {
+    /* --- hard code --- */
+    return vscode.Uri.joinPath(workspaceFolder.uri, inputDir);
+    /* --- hard code --- */
 }
 
-export async function getCssContent(wallpaperCssFolderUri: vscode.Uri): Promise<string> {
+export async function getCssContent(wallpaperCssFolderUri: vscode.Uri, styleCssName: string): Promise<string> {
     try {
 		await vscode.workspace.fs.stat(wallpaperCssFolderUri);
 	} catch (error) {
 		await vscode.workspace.fs.createDirectory(wallpaperCssFolderUri);
-		vscode.window.showInformationMessage('wallpaper-css folder created in your workspace root.');
+		vscode.window.showInformationMessage(`${wallpaperCssFolderUri.fsPath} folder created in your workspace root.`);
 	}
-    const cssPath = vscode.Uri.joinPath(wallpaperCssFolderUri, 'style.css');
+    const cssPath = vscode.Uri.joinPath(wallpaperCssFolderUri, styleCssName);
 	try {
 		await vscode.workspace.fs.stat(cssPath);
 	} catch (error) {
 		try {
 			await vscode.workspace.fs.writeFile(cssPath, Buffer.from(defaultCssContent, 'utf-8'));
-			vscode.window.showInformationMessage('style.css has been created in the wallpaper-css folder.');
+			vscode.window.showInformationMessage(`${styleCssName} has been created in the ${wallpaperCssFolderUri.fsPath} folder.`);
 		} catch (writeError) {
-			vscode.window.showErrorMessage('Failed to create style.css in the wallpaper-css folder.');
+			vscode.window.showErrorMessage(`Failed to create ${styleCssName} in the ${wallpaperCssFolderUri.fsPath} folder.`);
 			console.error(writeError);
 		}
 	}
@@ -98,7 +102,7 @@ export async function getCssContent(wallpaperCssFolderUri: vscode.Uri): Promise<
 		const cssContentBuffer = await vscode.workspace.fs.readFile(cssPath);
 		cssContent = Buffer.from(cssContentBuffer).toString('utf-8');
 	} catch (readError) {
-		vscode.window.showErrorMessage('Failed to read style.css in the wallpaper-css folder.');
+		vscode.window.showErrorMessage(`Failed to read ${styleCssName} in the ${wallpaperCssFolderUri.fsPath} folder.`);
 		console.error(readError);
 	}
     return cssContent;
@@ -121,7 +125,7 @@ export async function addBackgroundImageFilePath(html: string, backgroundImageUr
 			vscode.window.showErrorMessage('Background image file is not a file.');
 		}
 	}, (error) => {
-		vscode.window.showInformationMessage('If you want to include a background image, please put background-image.png in the wallpaper-css folder.');
+		vscode.window.showInformationMessage(`If you want to include a background image, please put ${backgroundImageUri.fsPath} in the wallpaper css folder.`);
 	});
     return html;
 }

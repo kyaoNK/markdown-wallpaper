@@ -11,10 +11,10 @@ interface TreeNode {
 }
 
 export class ContentDivider {
-	private readonly MAX_NUM_COLUMNS: number = 6;
-	private readonly MIN_NUM_COLUMNS: number = 1;
-	private readonly MAX_FONTSIZE: number = 24;
-	private readonly MIN_FONTSIZE: number = 14;
+	private maxNumColumns: number;
+	private minNumColumns: number;
+	private maxFontSize: number;
+	private minFontSize: number;
 
 	private htmlContent: string;
 	private cssContent: string;
@@ -27,10 +27,22 @@ export class ContentDivider {
 	private optimalFontSize: number = 0;
 	private optimalNumColumns: number = 0;
 
-	constructor(htmlContent: string, cssContent: string, wallpaperSize: WallpaperSize) {
+	constructor(
+		htmlContent: string,
+		cssContent: string, 
+		wallpaperSize: WallpaperSize,
+		maxNumColumns: number,
+		minNumColumns: number,
+		maxFontSize: number,
+		minFontSize: number,
+	) {
 		this.htmlContent = htmlContent;
 		this.cssContent = cssContent;
 		this.wallpaperSize = wallpaperSize;
+		this.maxNumColumns = maxNumColumns;
+		this.minNumColumns = minNumColumns;
+		this.maxFontSize = maxFontSize;
+		this.minFontSize = minFontSize;
 		this.puppeteerController = new PuppeteerController({accessWorkspace: false});
 	}
 
@@ -100,8 +112,8 @@ export class ContentDivider {
 
 	private async getOptimalSettings(): Promise<void> {
 		let bestResult: {fontSize: number, numColumns: number} | null = null;
-		for (let numColumns = this.MIN_NUM_COLUMNS; numColumns <= this.MAX_NUM_COLUMNS; numColumns++) {
-			for (let fontSize = this.MAX_FONTSIZE; fontSize >= this.MIN_FONTSIZE; fontSize--) {
+		for (let numColumns = this.minNumColumns; numColumns <= this.maxNumColumns; numColumns++) {
+			for (let fontSize = this.maxFontSize; fontSize >= this.minFontSize; fontSize--) {
 				try {
 					await this.setDomTree(fontSize, numColumns);
 					const fits = this.contentFitsInColumns(numColumns);
@@ -117,7 +129,7 @@ export class ContentDivider {
 				}
 			}
 		}
-		if (!bestResult) { bestResult = { fontSize: this.MIN_FONTSIZE, numColumns: this.MAX_NUM_COLUMNS }; }
+		if (!bestResult) { bestResult = { fontSize: this.minFontSize, numColumns: this.maxNumColumns }; }
 		this.optimalFontSize = bestResult.fontSize;
 		this.optimalNumColumns = bestResult.numColumns;
 		return;

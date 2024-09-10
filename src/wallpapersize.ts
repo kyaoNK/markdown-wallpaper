@@ -9,6 +9,7 @@ export type WallpaperSizeDict = {
     [name: string]: WallpaperSize
 };
 
+/* --- hard code --- */
 export const wallpaperSizes: WallpaperSizeDict = {
     // Standard Resolutions
     "SVGA": { width: 800, height: 600, aspectRatio: "4:3", category: "Standard" },
@@ -45,3 +46,4 @@ export const wallpaperSizes: WallpaperSizeDict = {
     "WSXGA+": { width: 1680, height: 1050, aspectRatio: "16:10", category: "Other" },
     "WQXGA": { width: 2560, height: 1600, aspectRatio: "16:10", category: "Other" },
 };
+/* --- hard code --- */

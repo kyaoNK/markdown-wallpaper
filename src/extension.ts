@@ -7,7 +7,7 @@ import { PuppeteerController } from './puppeteercontroller';
 import { wallpaperSizes } from './wallpapersize';
 import { addBackgroundImageFilePath, getWallpaperCssFolderUri, getCssContent, updateStyleWallpaperSize } from './wallpapercss';
 
-const defaultWallpaperSizeName: string = 'FHD';
+let defaultWallpaperSizeName: string = 'FHD';
 let lastSelectedWallpaperSizeName: string | undefined;
 
 async function registerUseLastWallpaperSizeCommand(context: vscode.ExtensionContext) {
@@ -46,6 +46,20 @@ async function registerSelectWallpaperSizeCommand(context: vscode.ExtensionConte
 }
 
 async function generateHtmlAndWallpaperFromMarkdown(wallpaperSizeName: string): Promise<void> {
+	
+	const config = vscode.workspace.getConfiguration('markdown-wallpaperimage');
+	const defaultWallpaperSize = config.get<string>('defaultWallpaperSizeName') ?? 'FHD';
+	const outputDir = config.get<string>('outputDirectory') ?? 'wallpapers';
+	const outputFileName = config.get<string>('outputFileName') ?? 'wallpaper';
+	const inputDir = config.get<string>('inputDirectory') ?? 'wallpaper-css';
+	const readStyleCssFileName = config.get<string>('readStyleCssFileName') ?? 'style.css';
+	const readBackgroundImageFileName = config.get<string>('readBackgroundImage') ?? 'background-image.png';
+	const maxNumColumns = config.get<number>('maxNumColumns') ?? 6;
+	const minNumColumns = config.get<number>('minNumColumns') ?? 1;
+	const maxFontSize = config.get<number>('maxFontSize') ?? 24;
+	const minFontSize = config.get<number>('minFontSize') ?? 14;
+	
+	defaultWallpaperSizeName = defaultWallpaperSize;
 	const wallpaperSize = wallpaperSizes[wallpaperSizeName];
 
 	const editor = vscode.window.activeTextEditor;
@@ -64,35 +78,43 @@ async function generateHtmlAndWallpaperFromMarkdown(wallpaperSizeName: string): 
 		return;
 	}
 
-	const wallpaperCssFolderUri = getWallpaperCssFolderUri(workspaceFolder);
-	let cssContent = await getCssContent(wallpaperCssFolderUri);
+	const wallpaperCssFolderUri = getWallpaperCssFolderUri(workspaceFolder, inputDir);
+	let cssContent = await getCssContent(wallpaperCssFolderUri, readStyleCssFileName);
 	cssContent = updateStyleWallpaperSize(cssContent, wallpaperSize);
 
 	const markdownText = editorDocument.getText();
 	const md = new MarkdownIt();
 	const htmlContent = `<html><head></head><body>${md.render(markdownText)}</body></html>`;
 
-	const divider = new ContentDivider(htmlContent, cssContent, wallpaperSize);
+	const divider = new ContentDivider(
+		htmlContent,
+		cssContent, 
+		wallpaperSize,
+		maxNumColumns,
+		minNumColumns,
+		maxFontSize,
+		minFontSize,
+	);
 	await divider.initialize();
 	let dividedHtml = await divider.run();
 	await divider.close();
 
-	const backgroundImageUri = vscode.Uri.joinPath(wallpaperCssFolderUri, 'background-image.png');
+	const backgroundImageUri = vscode.Uri.joinPath(wallpaperCssFolderUri, readBackgroundImageFileName);
 	dividedHtml = await addBackgroundImageFilePath(dividedHtml, backgroundImageUri);
 
 	let prettyHtml = pretty(dividedHtml);
 
-	const outDir = vscode.Uri.joinPath(workspaceFolder.uri, 'out');
+	const outDir = vscode.Uri.joinPath(workspaceFolder.uri, outputDir);
 	try {
 		await vscode.workspace.fs.createDirectory(outDir);
 	} catch (error) {
 		// Directory might already exist, ignore the error
 	}
 
-	const htmlPath = vscode.Uri.joinPath(outDir, 'wallpaper.html');
+	const htmlPath = vscode.Uri.joinPath(outDir, outputFileName + '.html');
 	await vscode.workspace.fs.writeFile(htmlPath, Buffer.from(prettyHtml));
 
-	const wallpaperImagePath = vscode.Uri.joinPath(outDir, 'wallpaper.png');
+	const wallpaperImagePath = vscode.Uri.joinPath(outDir, outputFileName + '.png');
 
 	const puppeteerController = new PuppeteerController({accessWorkspace: true, workspaceFolder: workspaceFolder});
 	if (lastSelectedWallpaperSizeName === undefined) {
